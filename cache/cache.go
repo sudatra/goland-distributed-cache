@@ -7,11 +7,11 @@ import (
 )
 
 type Cache struct {
-	lock sync.RWMutex
-	data map[string][]byte
+	lock 			sync.RWMutex
+	data 			map[string][]byte
 }
 
-func NewCache() *Cache {
+func New() *Cache {
 	return &Cache{
 		data: make(map[string][]byte),
 	}
