@@ -32,4 +32,32 @@ func (s *Server) Start() error {
 	}
 
 	log.Printf("Server starting on port [%s]\n ", s.listenAddr);
+
+	for {
+		conn, err := ln.Accept();
+		if err != nil {
+			log.Printf("Accept error: %s\n", err);
+			continue;
+		}
+
+		go s.handleConn(conn);
+	}
+}
+
+func (s *Server) handleConn(conn net.Conn) {
+	defer func() {
+		conn.Close();
+	}()
+
+	buff := make([]byte, 2048);
+	for {
+		n, err := conn.Read(buff);
+		if err != nil {
+			log.Printf("Conn read error: %s\n", err);
+			break;
+		}
+
+		msg := buff[:n];
+		fmt.Printf(string(msg));
+	}
 }
