@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/sudatra/goland-distributed-cache/cache"
 )
@@ -68,40 +65,21 @@ func (s *Server) handleConn(conn net.Conn) {
 }
 
 func (s *Server) handleCommand(conn net.Conn, rawCmd []byte) {
-	var (
-		rawStr = string(rawCmd)
-		parts = strings.Split(rawStr, " ")
-	)
-	if len(parts) == 0 {
-		log.Println("Invalid Command");
+	msg, err := parseMessage(rawCmd);
+	if err != nil {
+		fmt.Println("Failed to parse command", err);
 		return;
 	}
-
-	cmd := Command(parts[0]);
-	if cmd == CMDSet {
-		if len(parts) != 4 {
-			log.Println("Invalid SET Command");
-			return;
-		}
-
-		ttl, err := strconv.Atoi(parts[3]);
-		if err != nil {
-			log.Println("Invalid SET Command");
-			return;
-		}
-
-		msg := MSGSet{
-			Key: []byte(parts[1]),
-			Value: []byte(parts[2]),
-			TTL: time.Duration(ttl),
-		}
-		if err := s.handleSetCmd(conn, msg); err != nil {
-			return;
-		}
+	
+	switch msg.Cmd {
+		case CMDSet:
+			if err := s.handleSetCmd(conn, msg); err != nil {
+				return;
+			}
 	}
 }
 
-func (s *Server) handleSetCmd(conn net.Conn, msg MSGSet) error {
-	fmt.Println("Handling the set command: ", msg);
+func (s *Server) handleSetCmd(conn net.Conn, msg *Message) error {
+	fmt.Println("\nHandling the set command: ", msg);
 	return nil;
 }

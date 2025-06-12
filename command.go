@@ -1,6 +1,9 @@
 package main
 
 import (
+	"errors"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -13,17 +16,38 @@ type Message struct {
 	TTL   time.Duration
 }
 
-type MSGSet struct {
-	Key   []byte
-	Value []byte
-	TTL   time.Duration
-}
-
-type MSGGet struct {
-	Key   []byte
-}
-
 const (
 	CMDSet Command = "SET"
 	CMDGet Command = "GET"
 )
+
+func parseMessage(raw []byte) (*Message, error) {
+	var (
+		rawStr = string(raw)
+		parts = strings.Split(rawStr, " ")
+	)
+	if len(parts) < 2 {
+		return nil, errors.New("Invalid Protocol format");
+	}
+
+	msg := &Message{
+		Cmd: Command(parts[0]),
+		Key: []byte(parts[1]),
+	}
+
+	if msg.Cmd == CMDSet {
+		if len(parts) < 4 {
+			return nil, errors.New("Invalid SET command");
+		}
+
+		msg.Value = []byte(parts[2]);
+		ttl, err := strconv.Atoi(parts[3]);
+		if err != nil {
+			return nil, errors.New("Invalid SET TTL");
+		}
+
+		msg.TTL = time.Duration(ttl);
+	}
+
+	return msg, nil;
+}
