@@ -10,12 +10,14 @@ import (
 )
 
 type ServerOpts struct {
-	listenAddr string
-	isLeader   bool
+	ListenAddr string
+	IsLeader   bool
+	LeaderAddr string
 }
 
 type Server struct {
 	ServerOpts
+	followers map[net.Conn]struct{}
 	cache			cache.Cacher
 }
 
@@ -23,16 +25,18 @@ func NewServer(opts ServerOpts, c cache.Cacher) *Server {
 	return &Server{
 		ServerOpts: opts,
 		cache: c,
+		// TODO: only allocate when we are the leader
+		followers: make(map[net.Conn]struct{}),
 	}
 }
 
 func (s *Server) Start() error {
-	ln, err := net.Listen("tcp", s.listenAddr);
+	ln, err := net.Listen("tcp", s.ListenAddr);
 	if err != nil {
 		return fmt.Errorf("Listen error: (%s)", err);
 	}
 
-	log.Printf("Server starting on port [%s]\n ", s.listenAddr);
+	log.Printf("Server starting on port [%s]\n ", s.ListenAddr);
 
 	for {
 		conn, err := ln.Accept();
@@ -72,6 +76,8 @@ func (s *Server) handleCommand(conn net.Conn, rawCmd []byte) {
 		conn.Write([]byte(err.Error()));
 		return;
 	}
+
+	fmt.Printf("received command %s", msg.Cmd);
 	
 	switch msg.Cmd {
 		case CMDSet:
@@ -106,5 +112,12 @@ func (s *Server) handleGetCmd(conn net.Conn, msg *Message) error {
 }
 
 func (s *Server) sendToFollowers(ctx context.Context, msg *Message) error {
+	for conn := range s.followers {
+		_, err := conn.Write(msg.ToBytes());
+		if err != nil {
+			fmt.Println("write to follower error ", err);
+			continue;
+		}
+	}
 	return nil;
 }

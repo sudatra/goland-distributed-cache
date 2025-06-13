@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -10,9 +11,14 @@ import (
 )
 
 func main() {
+	listenAddr := flag.String("listenaddr", ":3000", "listen address of the server ");
+	leaderAddr := flag.String("leaderaddr", "", "listen address of the leader");
+	flag.Parse();
+
 	opts := ServerOpts{
-		listenAddr: ":3000",
-		isLeader:   true,
+		ListenAddr: *listenAddr,
+		IsLeader:   true,
+		LeaderAddr: *leaderAddr,
 	}
 
 	go func() {
